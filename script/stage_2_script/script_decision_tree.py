@@ -17,7 +17,6 @@ if 1:
     data_obj = Dataset_Loader('test', '')
     data_obj.dataset_source_folder_path = '../../data/stage_2_data/'
     data_obj.dataset_source_file_name = 'test.csv'
-    data_obj.load()
     
     method_obj = Method_DT('decision tree', '')
     

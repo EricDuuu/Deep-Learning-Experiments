@@ -5,9 +5,11 @@ Concrete SettingModule class for a specific experimental SettingModule
 # Copyright (c) 2017-Current Jiawei Zhang <jiawei@ifmlab.org>
 # License: TBD
 
-from code.base_class.setting import setting
-from sklearn.model_selection import KFold
 import numpy as np
+from sklearn.model_selection import KFold
+
+from code.base_class.setting import setting
+
 
 class Setting_KFold_CV(setting):
     fold = 3
@@ -26,7 +28,7 @@ class Setting_KFold_CV(setting):
             print('************ Fold:', fold_count, '************')
             X_train, X_test = np.array(loaded_data['X'])[train_index], np.array(loaded_data['X'])[test_index]
             y_train, y_test = np.array(loaded_data['y'])[train_index], np.array(loaded_data['y'])[test_index]
-        
+
             # run MethodModule
             self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test}}
             learned_result = self.method.run()

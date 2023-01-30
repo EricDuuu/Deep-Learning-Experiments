@@ -5,11 +5,12 @@ Concrete MethodModule class for a specific learning MethodModule
 # Copyright (c) 2017-Current Jiawei Zhang <jiawei@ifmlab.org>
 # License: TBD
 
-from code.base_class.method import method
-from code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
+import numpy as np
 import torch
 from torch import nn
-import numpy as np
+
+from code.base_class.method import method
+from code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
 
 
 class Method_MLP(method, nn.Module):
@@ -26,10 +27,10 @@ class Method_MLP(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
         # check here for nn.Linear doc: https://pytorch.org/docs/stable/generated/torch.nn.Linear.html
-        self.fc_layer_1 = nn.Linear(4, 4)
+        self.fc_layer_1 = nn.Linear(784, 500)
         # check here for nn.ReLU doc: https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html
         self.activation_func_1 = nn.ReLU()
-        self.fc_layer_2 = nn.Linear(4, 2)
+        self.fc_layer_2 = nn.Linear(500, 300)
         # check here for nn.Softmax doc: https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html
         self.activation_func_2 = nn.Softmax(dim=1)
 
@@ -40,7 +41,7 @@ class Method_MLP(method, nn.Module):
         '''Forward propagation'''
         # hidden layer embeddings
         h = self.activation_func_1(self.fc_layer_1(x))
-        # outout layer result
+        # output layer result
         # self.fc_layer_2(h) will be a nx2 tensor
         # n (denotes the input instance number): 0th dimension; 2 (denotes the class number): 1st dimension
         # we do softmax along dim=1 to get the normalized classification probability distributions for each instance
@@ -96,4 +97,3 @@ class Method_MLP(method, nn.Module):
         print('--start testing...')
         pred_y = self.test(self.data['test']['X'])
         return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
-            
