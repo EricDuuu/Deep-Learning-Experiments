@@ -12,7 +12,13 @@ from code.base_class.evaluate import evaluate
 
 class Evaluate_Accuracy(evaluate):
     data = None
-    
-    def evaluate(self):
-        print('evaluating performance...')
-        return metrics.mean_squared_error(self.data['true_y'], self.data['pred_y'])
+
+    def evaluate_F1(self):
+        return metrics.f1_score(self.data['true_y'], self.data['pred_y'], average="weighted")
+    def evaluate_accuracy(self):
+        return metrics.accuracy_score(self.data['true_y'], self.data['pred_y'])
+
+    def evaluate_recall(self):
+        return metrics.recall_score(self.data['true_y'], self.data['pred_y'], average="weighted")
+    def evaluate_precision(self):
+        return metrics.precision_score(self.data['true_y'], self.data['pred_y'], average="weighted")

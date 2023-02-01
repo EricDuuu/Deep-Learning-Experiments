@@ -9,17 +9,9 @@ from code.base_class.setting import setting
 
 
 class Setting_Train_Test_Split(setting):
-    fold = 3
-    
     def load_run_save_evaluate(self):
-        
         # load dataset
         loaded_data = self.dataset.load()
-
-        #X_train, y_train = train_test_split(loaded_data['X'], loaded_data['y'], test_size = 0.33)
-
-        # run MethodModule
-        # self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test}}
         self.method.data = loaded_data
         learned_result = self.method.run()
             
