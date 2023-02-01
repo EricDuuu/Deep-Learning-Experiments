@@ -17,11 +17,14 @@ class dataset:
     
     dataset_name = None
     dataset_descrition = None
-    
-    dataset_source_folder_path = None
-    dataset_source_file_name = None
-    
-    data = None
+
+    test_data = None
+    test_path = None
+    test_file_name = None
+
+    train_data = None
+    train_path = None
+    train_file_name = None
     
     # initialization function
     def __init__(self, dName=None, dDescription=None):

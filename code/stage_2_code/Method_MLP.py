@@ -17,6 +17,7 @@ class Method_MLP(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
     max_epoch = 500
+    batch_size = 4096
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
 
@@ -27,12 +28,13 @@ class Method_MLP(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
         # check here for nn.Linear doc: https://pytorch.org/docs/stable/generated/torch.nn.Linear.html
-        self.fc_layer_1 = nn.Linear(784, 500)
+        self.fc_layer_1 = nn.Linear(784, 256)
         # check here for nn.ReLU doc: https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html
         self.activation_func_1 = nn.ReLU()
-        self.fc_layer_2 = nn.Linear(500, 300)
+        self.fc_layer_2 = nn.Linear(256, 128)
         # check here for nn.Softmax doc: https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html
         self.activation_func_2 = nn.Softmax(dim=1)
+        # self.fc_layer_3 = nn.Linear(256, 128)
 
     # it defines the forward propagation function for input x
     # this function will calculate the output layer by layer
@@ -62,24 +64,27 @@ class Method_MLP(method, nn.Module):
         # it will be an iterative gradient updating process
         # we don't do mini-batch, we use the whole input as one batch
         # you can try to split X and y into smaller-sized batches by yourself
-        for epoch in range(self.max_epoch): # you can do an early stop if self.max_epoch is too much...
-            # get the output, we need to covert X into torch.tensor so pytorch algorithm can operate on it
-            y_pred = self.forward(torch.FloatTensor(np.array(X)))
-            # convert y to torch.tensor as well
-            y_true = torch.LongTensor(np.array(y))
-            # calculate the training loss
-            train_loss = loss_function(y_pred, y_true)
+        for epoch in range(self.max_epoch):  # you can do an early stop if self.max_epoch is too much...
+            for i in range(0, len(X), self.batch_size):
+                X_batch = X[i:i + self.batch_size]
+                y_batch = y[i:i + self.batch_size]
+                # get the output, we need to covert X into torch.tensor so pytorch algorithm can operate on it
+                y_pred = self.forward(torch.FloatTensor(np.array(X_batch)))
+                # convert y to torch.tensor as well
+                y_true = torch.LongTensor(np.array(y_batch))
+                # calculate the training loss
+                train_loss = loss_function(y_pred, y_true)
 
-            # check here for the gradient init doc: https://pytorch.org/docs/stable/generated/torch.optim.Optimizer.zero_grad.html
-            optimizer.zero_grad()
-            # check here for the loss.backward doc: https://pytorch.org/docs/stable/generated/torch.Tensor.backward.html
-            # do the error backpropagation to calculate the gradients
-            train_loss.backward()
-            # check here for the opti.step doc: https://pytorch.org/docs/stable/optim.html
-            # update the variables according to the optimizer and the gradients calculated by the above loss.backward function
-            optimizer.step()
+                # check here for the gradient init doc: https://pytorch.org/docs/stable/generated/torch.optim.Optimizer.zero_grad.html
+                optimizer.zero_grad()
+                # check here for the loss.backward doc: https://pytorch.org/docs/stable/generated/torch.Tensor.backward.html
+                # do the error backpropagation to calculate the gradients
+                train_loss.backward()
+                # check here for the opti.step doc: https://pytorch.org/docs/stable/optim.html
+                # update the variables according to the optimizer and the gradients calculated by the above loss.backward function
+                optimizer.step()
 
-            if epoch%100 == 0:
+            if epoch % 10 == 0:
                 accuracy_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
                 print('Epoch:', epoch, 'Accuracy:', accuracy_evaluator.evaluate(), 'Loss:', train_loss.item())
     
@@ -94,6 +99,7 @@ class Method_MLP(method, nn.Module):
         print('method running...')
         print('--start training...')
         self.train(self.data['train']['X'], self.data['train']['y'])
-        print('--start testing...')
-        pred_y = self.test(self.data['test']['X'])
-        return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
+        # print('--start testing...')
+        # pred_y = self.test(self.data['test']['X'])
+        # return {"""'pred_y': pred_y,""" 'true_y': self.data['test']['y']}
+        return {'true_y': self.data['test']['y']}
