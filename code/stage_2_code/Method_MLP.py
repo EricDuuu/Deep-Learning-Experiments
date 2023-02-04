@@ -15,7 +15,7 @@ from code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
 
 class Method_MLP(method, nn.Module):
     data = None
-    max_epoch = 10
+    max_epoch = 500
     batch_size = 4096
     learning_rate = 1e-3
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -47,17 +47,14 @@ class Method_MLP(method, nn.Module):
         accuracy_evaluator = Evaluate_Accuracy('training evaluator', '')
 
         for epoch in range(self.max_epoch):
-            for i in range(0, len(X), self.batch_size):
-                X_batch = X[i:i + self.batch_size]
-                y_batch = y[i:i + self.batch_size]
-                y_pred = self.forward(torch.FloatTensor(np.array(X_batch)))
-                y_true = torch.LongTensor(np.array(y_batch))
-                train_loss = loss_function(y_pred, y_true)
-                optimizer.zero_grad()
-                train_loss.backward()
-                optimizer.step()
+            y_pred = self.forward(torch.FloatTensor(np.array(X)))
+            y_true = torch.LongTensor(np.array(y))
+            train_loss = loss_function(y_pred, y_true)
+            optimizer.zero_grad()
+            train_loss.backward()
+            optimizer.step()
 
-            if epoch % 10 == 0:
+            if epoch % 100 == 0:
                 accuracy_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
                 print('Epoch:', epoch,
                       'Accuracy:', accuracy_evaluator.evaluate_accuracy(),
