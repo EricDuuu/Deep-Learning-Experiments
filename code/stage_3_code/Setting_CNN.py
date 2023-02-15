@@ -15,8 +15,6 @@ class Setting_CNN(setting):
         # load dataset
         loaded_data = self.dataset.load()
 
-        # X_train, X_test, y_train, y_test = train_test_split(loaded_data['X'], loaded_data['y'], test_size = 0.33)
-
         # run MethodModule
         self.method.data = loaded_data
         learned_result = self.method.run()
@@ -27,6 +25,6 @@ class Setting_CNN(setting):
             
         self.evaluate.data = learned_result
         
-        return self.evaluate.evaluate()
+        return self.evaluate.evaluate_accuracy()
 
         

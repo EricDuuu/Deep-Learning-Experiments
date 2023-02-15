@@ -16,8 +16,8 @@ if 1:
     dataset = dataset_dict[1]
 
     data_obj = Dataset_Loader(dataset, '')
-    data_obj.test_path = '../../data/stage_3_data/'
-    data_obj.test_file_name = dataset
+    data_obj.dataset_source_folder_path = '../../data/stage_3_data/'
+    data_obj.dataset_source_file_name = dataset
 
     method_obj = Method_CNN('convolutional neural network', '', dataset)
 
