@@ -19,6 +19,6 @@ class Evaluate_Accuracy(evaluate):
         return metrics.accuracy_score(self.data['true_y'], self.data['pred_y'])
 
     def evaluate_recall(self):
-        return metrics.recall_score(self.data['true_y'], self.data['pred_y'], average="weighted")
+        return metrics.recall_score(self.data['true_y'], self.data['pred_y'], average="weighted", zero_division=0)
     def evaluate_precision(self):
         return metrics.precision_score(self.data['true_y'], self.data['pred_y'], average="weighted", zero_division=0)

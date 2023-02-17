@@ -29,6 +29,7 @@ class Dataset_Loader(dataset):
     data = None
     dataset_source_folder_path = None
     dataset_source_file_name = None
+    batch_size = 10
 
     def __init__(self, dName=None, dDescription=None):
         super().__init__(dName, dDescription)
@@ -44,8 +45,8 @@ class Dataset_Loader(dataset):
         test_y = []
 
         if self.dataset_source_file_name == 'MNIST':
-            self.mean = [0.4914]
-            self.std = [0.2470]
+            self.mean = [0]
+            self.std = [255]
         elif self.dataset_source_file_name == 'ORL':
             self.mean = [0.4914, 0.4822, 0.4465]
             self.std = [0.2470, 0.2435, 0.2616]
@@ -66,8 +67,8 @@ class Dataset_Loader(dataset):
         traindata = CustomDataset(train_X, train_y, self.data)
         testdata = CustomDataset(test_X, test_y, self.data)
 
-        traindata = DataLoader(traindata, batch_size=10, shuffle=True, num_workers=0)
-        testdata = DataLoader(testdata, batch_size=len(train_y), shuffle=False, num_workers=0)
+        traindata = DataLoader(traindata, batch_size=self.batch_size, shuffle=True, num_workers=0)
+        testdata = DataLoader(testdata, batch_size=self.batch_size, shuffle=False, num_workers=0)
 
         f.close()
         return {'test': testdata, 'train': traindata}
