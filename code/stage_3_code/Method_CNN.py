@@ -102,7 +102,6 @@ class Method_CNN(method, nn.Module):
             for i, (images, labels) in enumerate(data, 0):
                 y_pred = self.forward(images.float().to(self.device))
                 y_true = labels.to(self.device)
-                print(y_pred.shape, y_true.shape)
 
                 optimizer.zero_grad()
                 train_loss = loss_function(y_pred, y_true)
