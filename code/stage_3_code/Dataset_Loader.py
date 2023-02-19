@@ -43,13 +43,15 @@ class Dataset_Loader(dataset):
         train_y = []
         test_X = []
         test_y = []
+        ORL_NEG = 0
 
         if self.dataset_source_file_name == 'MNIST':
             self.mean = [0]
             self.std = [255]
         elif self.dataset_source_file_name == 'ORL':
-            self.mean = [0.4914, 0.4822, 0.4465]
-            self.std = [0.2470, 0.2435, 0.2616]
+            self.mean = [0, 0, 0]
+            self.std = [1, 1, 1]
+            ORL_NEG = 1
         elif self.dataset_source_file_name == 'CIFAR':
             self.mean = [0.4914, 0.4822, 0.4465]
             self.std = [0.2470, 0.2435, 0.2616]
@@ -58,11 +60,11 @@ class Dataset_Loader(dataset):
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(self.mean, self.std)])
         for line in self.data['test']:
             test_X.append(transform(line['image']))
-            test_y.append(line['label'])
+            test_y.append(line['label']-ORL_NEG)
 
         for line in self.data['train']:
             train_X.append(transform(line['image']))
-            train_y.append(line['label'])
+            train_y.append(line['label']-ORL_NEG)
 
         traindata = CustomDataset(train_X, train_y, self.data)
         testdata = CustomDataset(test_X, test_y, self.data)

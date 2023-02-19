@@ -43,10 +43,13 @@ class Method_CNN(method, nn.Module):
             ).to(self.device)
             self.out = nn.Linear(32 * 7 * 7, 10).to(self.device)
         elif self.dataset == 'ORL':
-            self.fc_layer_1 = nn.Linear(4, 4).to(self.device)
-            self.activation_func_1 = nn.ReLU()
-            self.fc_layer_2 = nn.Linear(4, 2).to(self.device)
-            self.activation_func_2 = nn.Softmax(dim=1)
+            self.conv_layer_1 = nn.Conv2d(3, 32, 3, 1).to(self.device)
+            self.activation_func_1 = nn.ReLU().to(self.device)
+            self.conv_layer_2 = nn.Conv2d(32, 32, 3, 1).to(self.device)
+            self.conv_layer_3 = nn.Conv2d(32, 64, 3, 1).to(self.device)
+            self.fc_layer_1 = nn.Linear(3 * 2 * 64, 128).to(self.device)
+            self.fc_layer_2 = nn.Linear(128, 40).to(self.device)
+            self.activation_func_2 = nn.LogSoftmax(dim=1).to(self.device)
         elif self.dataset == 'CIFAR':
             self.conv1 = nn.Sequential(
                 nn.Conv2d(
@@ -74,7 +77,15 @@ class Method_CNN(method, nn.Module):
             output = self.out(x)
             return output
         elif self.dataset == 'ORL':
-            return x
+            h = self.activation_func_1(self.conv_layer_1(x))
+            h = nn.MaxPool2d(5).to(self.device)(h)
+            h = nn.ReLU().to(self.device)(self.conv_layer_2(h))
+            h = nn.MaxPool2d(4).to(self.device)(h)
+            h = nn.ReLU().to(self.device)(self.conv_layer_3(h))
+            h = torch.flatten(h, 1)
+            h = nn.ReLU().to(self.device)(self.fc_layer_1(h))
+            y_pred = self.activation_func_2(self.fc_layer_2(h))
+            return y_pred
         elif self.dataset == 'CIFAR':
             x = self.conv1(x)
             x = self.conv2(x)  # flatten the output of conv2 to (batch_size, 32 * 7 * 7)
@@ -91,6 +102,7 @@ class Method_CNN(method, nn.Module):
             for i, (images, labels) in enumerate(data, 0):
                 y_pred = self.forward(images.float().to(self.device))
                 y_true = labels.to(self.device)
+                print(y_pred.shape, y_true.shape)
 
                 optimizer.zero_grad()
                 train_loss = loss_function(y_pred, y_true)

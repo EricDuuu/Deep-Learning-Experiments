@@ -24,7 +24,14 @@ class Setting_CNN(setting):
         self.result.save()
             
         self.evaluate.data = learned_result
-        
+
+        print("TESTING RESULTS")
+        print(
+            'Accuracy:', self.evaluate.evaluate_accuracy(),
+            'F1', self.evaluate.evaluate_F1(),
+            'Precision', self.evaluate.evaluate_precision(),
+            'Recall', self.evaluate.evaluate_recall(),
+        )
         return self.evaluate.evaluate_accuracy()
 
         
