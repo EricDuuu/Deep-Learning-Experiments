@@ -31,7 +31,7 @@ class Dataset_Loader(dataset):
     data = None
     dataset_source_folder_path = None
     dataset_source_file_name = None
-    batch_size = 100
+    batch_size = 10
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def __init__(self, dName=None, dDescription=None):
@@ -48,20 +48,16 @@ class Dataset_Loader(dataset):
         test_y = []
         ORL_NEG = 0
 
-        height, width = 32, 32
-
         if self.dataset_source_file_name == 'MNIST':
             self.mean = [0]
             self.std = [255]
         elif self.dataset_source_file_name == 'ORL':
-            height, width = 112, 92
             self.mean = [0.4914, 0.4822, 0.4465]
-            self.std = [0.2470, 0.2435, 0.2616],
+            self.std = [0.2470, 0.2435, 0.2616]
             ORL_NEG = 1
         elif self.dataset_source_file_name == 'CIFAR':
             self.mean = [0.4914, 0.4822, 0.4465]
-            self.std = [0.2023, 0.1994, 0.2010]
-
+            self.std = [0.2470, 0.2435, 0.2616]
 
         # Normalize images
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(self.mean, self.std)])
@@ -77,7 +73,7 @@ class Dataset_Loader(dataset):
         testdata = CustomDataset(test_X, test_y, self.data)
 
         traindata = DataLoader(traindata, batch_size=self.batch_size, shuffle=True, num_workers=0)
-        testdata = DataLoader(testdata, batch_size=self.batch_size, shuffle=False, num_workers=0)
+        testdata = DataLoader(testdata, batch_size=100, shuffle=False, num_workers=0)
 
         f.close()
         return {'test': testdata, 'train': traindata}

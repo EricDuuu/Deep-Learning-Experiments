@@ -13,7 +13,7 @@ if 1:
 
     dataset_dict = {1: 'MNIST', 2: 'ORL', 3: 'CIFAR'}
     # Change this when testing each individual datasets
-    dataset = dataset_dict[1]
+    dataset = dataset_dict[3]
 
     data_obj = Dataset_Loader(dataset, '')
     data_obj.dataset_source_folder_path = '../../data/stage_3_data/'
