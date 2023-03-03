@@ -5,11 +5,10 @@ from sklearn import metrics
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim, n_layers, bidirectional,
-                 dropout_rate, pad_index):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim, layers, bidirectional, dropout_rate):
         super().__init__()
-        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=pad_index)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, n_layers, bidirectional=bidirectional,
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=1)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, layers, bidirectional=bidirectional,
                             dropout=dropout_rate, batch_first=True)
         self.fc = nn.Linear(hidden_dim * 2 if bidirectional else hidden_dim, output_dim)
         self.dropout = nn.Dropout(dropout_rate)
@@ -41,7 +40,7 @@ def evaluate_recall(pred, true):
 def evaluate_precision(pred, true):
     return metrics.precision_score(pred.cpu().detach().numpy(), true.cpu().detach().numpy(), average="weighted", zero_division=0)
 
-def train(epochs,dataloader, model, criterion, optimizer, device):
+def train(epochs, dataloader, model, loss_function, optimizer, device):
     model.train()
     epoch_losses = epoch_accuracies = epoch_F1 = epoch_recall = epoch_precision = []
     for epoch in range(epochs):
@@ -50,7 +49,7 @@ def train(epochs,dataloader, model, criterion, optimizer, device):
             review = review.to(device)
             label = label.to(device)
             prediction = model(review)
-            loss = criterion(prediction, label)
+            loss = loss_function(prediction, label)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -71,7 +70,7 @@ def train(epochs,dataloader, model, criterion, optimizer, device):
     return  epoch_losses, epoch_accuracies, epoch_F1, epoch_recall, epoch_precision
 
 
-def test(dataloader, model, criterion, device):
+def test(dataloader, model, loss_function, device):
     model.eval()
     losses = []
     accuracies = []
@@ -84,7 +83,7 @@ def test(dataloader, model, criterion, device):
             review = review.to(device)
             label = label.to(device)
             prediction = model(review)
-            loss = criterion(prediction, label)
+            loss = loss_function(prediction, label)
             losses.append(loss.item())
 
             prediction = prediction.max(1)[1]
