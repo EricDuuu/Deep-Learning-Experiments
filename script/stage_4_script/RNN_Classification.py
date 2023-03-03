@@ -1,35 +1,51 @@
-import numpy as np
 import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchtext
+from torch.utils.data import TensorDataset, DataLoader
 
-from code.stage_4_code.Dataset_Loader_Classification import Dataset_Loader
-from code.stage_4_code.Evaluate_Accuracy import Evaluate_Accuracy
-from code.stage_4_code.Method_RNN_Classification import Method_RNN
-from code.stage_4_code.Result_Saver import Result_Saver
-from code.stage_4_code.Setting_RNN import Setting_RNN
+from code.stage_4_code.Data_Loader_Classification import Data_Loader
+from code.stage_4_code.RNN_Model_Classification import LSTM, train, test
 
 if 1:
-    np.random.seed(2)
-    torch.manual_seed(2)
+    max_len = 256   # Max len of Reviews
+    # Returns encoded and padded dataset
+    train_data, test_data, vocab = Data_Loader(max_len).run()
+    train_data = TensorDataset(torch.LongTensor(train_data['X']), torch.LongTensor(train_data['Y']))
+    test_data = TensorDataset(torch.LongTensor(test_data['X']), torch.LongTensor(test_data['Y']))
 
-    data_obj = Dataset_Loader('Classification', '')
-    data_obj.dataset_source_folder_path = '../../data/stage_4_data/'
-    data_obj.dataset_source_file_name = 'text_classification'
+    # Model Parameters
+    batch_size = 512
+    vocab_size = len(vocab)
+    embedding_dim = 100
+    hidden_dim = 300
+    output_dim = 2  # 0 and 1
+    n_layers = 2
+    bidirectional = False
+    dropout_rate = 0.5
 
-    method_obj = Method_RNN('convolutional neural network', '', 'Classification')
+    # Initialize Dataloaders for ease of batching
+    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-    result_obj = Result_Saver('saver', '')
-    result_obj.result_destination_folder_path = '../../result/stage_2_result/RNN_'
-    result_obj.result_destination_file_name = 'Classification'
+    # Initialize Model
+    model = LSTM(vocab_size, embedding_dim, hidden_dim, output_dim, n_layers, bidirectional, dropout_rate, 1)
 
-    setting_obj = Setting_RNN('RNN', '')
 
-    evaluate_obj = Evaluate_Accuracy('accuracy', '')
-    # ---- running section ---------------------------------
-    print('************ Start ************')
-    setting_obj.prepare(data_obj, method_obj, result_obj, evaluate_obj)
-    setting_obj.print_setup_summary()
-    mean_score = setting_obj.load_run_save_evaluate()
-    print('************ Overall Performance ************')
-    print('CNN Accuracy: ' + str(mean_score))
-    print('************ Finish ************')
-    # ------------------------------------------------------
+    vectors = torchtext.vocab.GloVe(name="6B", dim=100)
+    pretrained_embedding = vectors.get_vecs_by_tokens(vocab.get_itos())
+    model.embedding.weight.data = pretrained_embedding
+
+    # Model Hyperparameters
+    lr = 5e-4
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    criterion = criterion.to(device)
+    epochs = 10
+
+    losses, accuracies, precision, F1, recall = train(epochs,train_dataloader, model, criterion, optimizer, device)
+    for i in range(epochs):
+        print("epoch: ", i+1, "loss: ", losses[i], "accuracy: ", accuracies[i], "precision: ", precision[i], "F1: ", F1[i], "recall: ", recall[i])
+    nice = test(test_dataloader, model, criterion, device)
