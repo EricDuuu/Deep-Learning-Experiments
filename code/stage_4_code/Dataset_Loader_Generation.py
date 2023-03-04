@@ -44,6 +44,24 @@ class Dataset_Loader(dataset):
 
         return text_stripped
 
+        text = re.sub('[%s]' % re.escape(string.punctuation), '', text)  # str in square brackets
+        text = re.sub('(%s)' % re.escape(string.punctuation), '', text)  # str in round brackets
+        joke = re.sub(r'https?://\S+|www\.\S+', '', text)  # links
+
+        pattern = r'([.,!?-])'
+        joke = re.sub(pattern, r' \1 ', joke)  # add whitespaces between punctuation
+        joke = re.sub(r'\s{2,}', ' ', joke)  # remove double whitespaces
+
+        joke = re.sub(r'(.)\1+', r'\1\1', joke)
+        joke = re.sub('\w*\d\w*', '', joke)
+
+        joke = re.sub(r"[^a-zA-Z]", ' ', joke)  # punctuation
+        joke = re.sub(r' +', ' ', joke)  # remove whitespaces
+
+        joke = joke.lower()
+        joke = joke.split()
+        return joke
+
     def data_split(self, test_size=0.2):
 
 
