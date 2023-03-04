@@ -13,21 +13,14 @@ class LSTM(nn.Module):
         self.fc = nn.Linear(hidden_dim * 2 if bidirectional else hidden_dim, output_dim)
         self.dropout = nn.Dropout(dropout_rate)
 
-    def forward(self, ids):
-        # ids = [batch size, seq len]
-        embedded = self.dropout(self.embedding(ids))
-        # embedded = [batch size, seq len, embedding dim]
+    def forward(self, reviews):
+        embedded = self.dropout(self.embedding(reviews))
         packed_output, (hidden, cell) = self.lstm(embedded)
-        # hidden = [n layers * n directions, batch size, hidden dim]
-        # cell = [n layers * n directions, batch size, hidden dim]
         if self.lstm.bidirectional:
             hidden = self.dropout(torch.cat([hidden[-1], hidden[-2]], dim=-1))
-            # hidden = [batch size, hidden dim * 2]
         else:
             hidden = self.dropout(hidden[-1])
-            # hidden = [batch size, hidden dim]
         prediction = self.fc(hidden)
-        # prediction = [batch size, output dim]
         return prediction
 
 
@@ -41,36 +34,49 @@ def evaluate_precision(pred, true):
     return metrics.precision_score(pred.cpu().detach().numpy(), true.cpu().detach().numpy(), average="weighted", zero_division=0)
 
 def train(epochs, dataloader, model, loss_function, optimizer, device):
+    BCE = loss_function._get_name() == "BCEWithLogitsLoss" or loss_function._get_name() == "BCELoss"
     model.train()
-    epoch_losses = epoch_accuracies = epoch_F1 = epoch_recall = epoch_precision = []
+    losses = []
+    accuracies = []
+    F1s = []
+    recalls = []
+    precisions = []
     for epoch in range(epochs):
-        batch_losses = batch_accuracies = batch_F1 = batch_recall = batch_precision = []
         for review, label in dataloader:
             review = review.to(device)
+            if BCE:
+                label = label.float()
             label = label.to(device)
             prediction = model(review)
+            if BCE:
+                prediction = torch.round(nn.Sigmoid()(prediction).squeeze())
+
             loss = loss_function(prediction, label)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            batch_losses.append(loss.item())
+            losses.append(loss.item())
 
-            prediction = prediction.max(1)[1]
-            batch_recall.append(evaluate_recall(prediction, label))
-            batch_precision.append(evaluate_precision(prediction, label))
-            batch_F1.append(evaluate_F1(prediction, label))
-            batch_accuracies.append(evaluate_accuracy(prediction, label))
+            if not BCE:
+                prediction = prediction.max(1)[1]
+            recalls.append(evaluate_recall(prediction, label))
+            precisions.append(evaluate_precision(prediction, label))
+            F1s.append(evaluate_F1(prediction, label))
+            accuracies.append(evaluate_accuracy(prediction, label))
 
-        epoch_losses.append(np.mean(batch_losses))
-        epoch_recall.append(np.mean(batch_recall))
-        epoch_precision.append(np.mean(batch_precision))
-        epoch_F1.append(np.mean(batch_F1))
-        epoch_accuracies.append(np.mean(batch_accuracies))
+        loss = np.mean(losses)
+        recall = np.mean(recalls)
+        precision = np.mean(precisions)
+        F1 = np.mean(F1s)
+        accuracy = np.mean(accuracies)
+        print("epoch: ", epoch+1, "loss: ", loss, "accuracy: ", accuracy, "precision: ",
+              precision, "F1: ", F1, "recall: ", recall)
 
-    return  epoch_losses, epoch_accuracies, epoch_F1, epoch_recall, epoch_precision
+    return (losses, accuracies, F1s, recalls, precisions)
 
 
 def test(dataloader, model, loss_function, device):
+    BCE = loss_function._get_name() == "BCEWithLogitsLoss" or loss_function._get_name() == "BCELoss"
     model.eval()
     losses = []
     accuracies = []
@@ -81,15 +87,24 @@ def test(dataloader, model, loss_function, device):
     with torch.no_grad():
         for review, label in dataloader:
             review = review.to(device)
+
+            if BCE:
+                label = label.float()
+
             label = label.to(device)
             prediction = model(review)
+
+            if BCE:
+                prediction = torch.round(nn.Sigmoid()(prediction).squeeze())
+
             loss = loss_function(prediction, label)
             losses.append(loss.item())
 
-            prediction = prediction.max(1)[1]
+            if not BCE:
+                prediction = prediction.max(1)[1]
             recall.append(evaluate_recall(prediction, label))
             precision.append(evaluate_precision(prediction, label))
             F1.append(evaluate_F1(prediction, label))
             accuracies.append(evaluate_accuracy(prediction, label))
 
-    return losses, accuracies, precision, F1, recall
+    return (losses, accuracies, precision, F1, recall)
