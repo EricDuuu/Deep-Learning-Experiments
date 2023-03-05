@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -8,7 +10,7 @@ from code.stage_4_code.Dataset_Loader_Generation import Data_Loader
 from code.stage_4_code.RNN_Model_Classification import LSTM, train
 
 
-def generate_text(model, word2index, index2word, seed_sequence, max_length=20, temperature=1.0):
+def generate_text(model, word2index, index2word, seed_sequence, max_length=20, randomness=1.0):
     model.eval()
     with torch.no_grad():
         input_sequence = seed_sequence.copy()
@@ -16,7 +18,7 @@ def generate_text(model, word2index, index2word, seed_sequence, max_length=20, t
             input_tensor = torch.LongTensor([word2index[w] for w in input_sequence[-sequence_length:]])
             input_tensor = input_tensor.unsqueeze(0).to(device)
             output = model(input_tensor)
-            logits = output.squeeze() / temperature
+            logits = output.squeeze() / randomness
             probs = nn.functional.softmax(logits, dim=-1)
             word_idx = torch.multinomial(probs, 1).item()
             word = index2word[word_idx]
@@ -24,6 +26,7 @@ def generate_text(model, word2index, index2word, seed_sequence, max_length=20, t
             if word == '<EOJ>':
                 break
     return ' '.join(input_sequence)
+
 
 if 1:
     sequence_length = 3
@@ -48,13 +51,12 @@ if 1:
     hidden_dim = 300
     output_dim = len(vocab)
     layers = 2
-    bidirectional = False
+    bidirectional = True
     dropout_rate = 0.5
 
     # Initialize Dataloaders for ease of batching
     train_data = TensorDataset(torch.LongTensor(input_sequences), torch.LongTensor(target_sequences))
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-
 
     # Initialize Model
     model = LSTM(vocab_size, embedding_dim, hidden_dim, output_dim, layers, bidirectional, dropout_rate)
@@ -65,9 +67,10 @@ if 1:
     model.embedding.weight.data = pretrained_embedding
 
     # Model Hyperparameters
+    loadSavedModel = False
     model_name = "LSTM"
-    epochs = 1
-    lr = 0.0005
+    epochs = 60
+    lr = 0.005
     # loss functions: CrossEntropyLoss BCEWithLogitsLoss BCELoss
     loss_function = nn.CrossEntropyLoss()
     # optimizers: Adam SparseAdam Adamax ASGD NAdam RAdam SGD Adadelta Adagrad
@@ -77,11 +80,25 @@ if 1:
     loss_function = loss_function.to(device)
 
     print("===TRAINING===")
-    losses, accuracies, precisions, F1_scores, recalls = train(epochs, train_dataloader, model,
-                                                               loss_function, optimizer, device)
+    if loadSavedModel == False:
+        losses, accuracies, precisions, F1_scores, recalls = train(epochs, train_dataloader, model,
+                                                                   loss_function, optimizer, device)
     print("===TRAINING END===")
 
+    if loadSavedModel == False:
+        model_path = "joke_generator.pt"
+        torch.save(model.state_dict(), model_path)
+    else:
+        model_path = "joke_generator.pt"
+        if os.path.exists(model_path):
+            model.load_state_dict(torch.load(model_path))
+
     # Generate text using the trained model
-    seed_sequence = ['why', 'did', 'the']
-    generated_text = generate_text(model, word2index, index2word, seed_sequence, max_length=20, temperature=0.8)
-    print(generated_text)
+    seed_sequence = ['what', 'did', 'the']
+    for i in range(20):
+        generated_text = generate_text(model, word2index, index2word, seed_sequence, max_length=30, randomness=0.8)
+        print(generated_text)
+    seed_sequence = ['smell', 'you', 'later']
+    for i in range(20):
+        generated_text = generate_text(model, word2index, index2word, seed_sequence, max_length=30, randomness=2.4)
+        print(generated_text)
