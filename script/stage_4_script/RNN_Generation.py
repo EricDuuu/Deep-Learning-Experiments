@@ -1,39 +1,87 @@
-import numpy as np
 import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchtext
+from torch.utils.data import TensorDataset, DataLoader
 
-from code.stage_3_code.Dataset_Loader import Dataset_Loader
-from code.stage_3_code.Evaluate_Accuracy import Evaluate_Accuracy
-from code.stage_3_code.Method_CNN import Method_CNN
-from code.stage_3_code.Result_Saver import Result_Saver
-from code.stage_3_code.Setting_CNN import Setting_CNN
+from code.stage_4_code.Dataset_Loader_Generation import Data_Loader
+from code.stage_4_code.RNN_Model_Classification import LSTM, train
+
+
+def generate_text(model, word2index, index2word, seed_sequence, max_length=20, temperature=1.0):
+    model.eval()
+    with torch.no_grad():
+        input_sequence = seed_sequence.copy()
+        for i in range(max_length):
+            input_tensor = torch.LongTensor([word2index[w] for w in input_sequence[-sequence_length:]])
+            input_tensor = input_tensor.unsqueeze(0).to(device)
+            output = model(input_tensor)
+            logits = output.squeeze() / temperature
+            probs = nn.functional.softmax(logits, dim=-1)
+            word_idx = torch.multinomial(probs, 1).item()
+            word = index2word[word_idx]
+            input_sequence.append(word)
+            if word == '<EOJ>':
+                break
+    return ' '.join(input_sequence)
 
 if 1:
-    np.random.seed(2)
-    torch.manual_seed(2)
+    sequence_length = 3
+    # Returns encoded and padded dataset
+    train_data, vocab = Data_Loader(sequence_length).run()
+    word2index = vocab.get_stoi()
+    index2word = vocab.get_itos()
 
-    dataset_dict = {1: 'MNIST', 2: 'ORL', 3: 'CIFAR'}
-    # Change this when testing each individual datasets
-    dataset = dataset_dict[3]
+    input_sequences = []
+    target_sequences = []
+    for joke in train_data:
+        for i in range(len(joke) - sequence_length):
+            input_seq = joke[i:i + sequence_length]
+            target_seq = joke[i + sequence_length]
+            input_sequences.append(input_seq)
+            target_sequences.append(target_seq)
 
-    data_obj = Dataset_Loader(dataset, '')
-    data_obj.dataset_source_folder_path = '../../data/stage_3_data/'
-    data_obj.dataset_source_file_name = dataset
+    # Model Parameters
+    batch_size = 32
+    vocab_size = len(vocab)
+    embedding_dim = 100  # GloVe: 50 100 200 300
+    hidden_dim = 300
+    output_dim = len(vocab)
+    layers = 2
+    bidirectional = False
+    dropout_rate = 0.5
 
-    method_obj = Method_CNN('convolutional neural network', '', dataset)
+    # Initialize Dataloaders for ease of batching
+    train_data = TensorDataset(torch.LongTensor(input_sequences), torch.LongTensor(target_sequences))
+    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 
-    result_obj = Result_Saver('saver', '')
-    result_obj.result_destination_folder_path = '../../result/stage_2_result/CNN_'
-    result_obj.result_destination_file_name = dataset
 
-    setting_obj = Setting_CNN('CNN', '')
+    # Initialize Model
+    model = LSTM(vocab_size, embedding_dim, hidden_dim, output_dim, layers, bidirectional, dropout_rate)
 
-    evaluate_obj = Evaluate_Accuracy('accuracy', '')
-    # ---- running section ---------------------------------
-    print('************ Start ************')
-    setting_obj.prepare(data_obj, method_obj, result_obj, evaluate_obj)
-    setting_obj.print_setup_summary()
-    mean_score = setting_obj.load_run_save_evaluate()
-    print('************ Overall Performance ************')
-    print('CNN Accuracy: ' + str(mean_score))
-    print('************ Finish ************')
-    # ------------------------------------------------------
+    # Embed the vectors
+    vectors = torchtext.vocab.GloVe(name="6B", dim=embedding_dim)
+    pretrained_embedding = vectors.get_vecs_by_tokens(vocab.get_itos())
+    model.embedding.weight.data = pretrained_embedding
+
+    # Model Hyperparameters
+    model_name = "LSTM"
+    epochs = 1
+    lr = 0.0005
+    # loss functions: CrossEntropyLoss BCEWithLogitsLoss BCELoss
+    loss_function = nn.CrossEntropyLoss()
+    # optimizers: Adam SparseAdam Adamax ASGD NAdam RAdam SGD Adadelta Adagrad
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    loss_function = loss_function.to(device)
+
+    print("===TRAINING===")
+    losses, accuracies, precisions, F1_scores, recalls = train(epochs, train_dataloader, model,
+                                                               loss_function, optimizer, device)
+    print("===TRAINING END===")
+
+    # Generate text using the trained model
+    seed_sequence = ['why', 'did', 'the']
+    generated_text = generate_text(model, word2index, index2word, seed_sequence, max_length=20, temperature=0.8)
+    print(generated_text)
