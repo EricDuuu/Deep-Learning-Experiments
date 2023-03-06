@@ -10,18 +10,24 @@ from code.stage_4_code.Dataset_Loader_Generation import Data_Loader
 from code.stage_4_code.RNN_Model_Classification import LSTM, train
 
 
-def generate_text(model, word2index, index2word, seed_sequence, max_length=20, randomness=1.0):
+def generate_text(model, word2index, index2word, seed_sequence, max_length=20, randomness=1.0, k=30):
     model.eval()
     with torch.no_grad():
         input_sequence = seed_sequence.copy()
         for i in range(max_length):
             input_tensor = torch.LongTensor([word2index[w] for w in input_sequence[-sequence_length:]])
-            input_tensor = input_tensor.unsqueeze(0).to(device)
+            input_tensor = input_tensor.unsqueeze(0).to(device)  # Turn into list of encoded ints
             output = model(input_tensor)
-            logits = output.squeeze() / randomness
-            probs = nn.functional.softmax(logits, dim=-1)
-            word_idx = torch.multinomial(probs, 1).item()
-            word = index2word[word_idx]
+            logits = output.squeeze() / randomness  # randomness, else it will predict already known jokes
+            # probs = nn.functional.gumbel_softmax(logits, tau=randomness, dim=-1)
+            # probs = nn.functional.softmax(logits, dim=-1)
+            probs = nn.functional.gumbel_softmax(logits, tau=randomness, dim=-1)
+
+            top_k_probs, top_k_indices = torch.topk(probs, k)  # Topk frequent words for better randomization
+            top_k_probs = top_k_probs / top_k_probs.sum()  # Normalize probabilities
+            word_idx = torch.multinomial(top_k_probs, 1).item()
+
+            word = index2word[top_k_indices[word_idx]]
             input_sequence.append(word)
             if word == '<EOJ>':
                 break

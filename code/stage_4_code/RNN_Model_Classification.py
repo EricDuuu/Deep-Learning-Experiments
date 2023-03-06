@@ -15,7 +15,7 @@ class LSTM(nn.Module):
 
     def forward(self, reviews):
         embedded = self.dropout(self.embedding(reviews))
-        packed_output, (hidden, cell) = self.lstm(embedded)
+        output, (hidden, cell) = self.lstm(embedded)
         if self.lstm.bidirectional:
             hidden = self.dropout(torch.cat([hidden[-1], hidden[-2]], dim=-1))
         else:
