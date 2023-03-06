@@ -99,12 +99,17 @@ if 1:
         if os.path.exists(model_path):
             model.load_state_dict(torch.load(model_path))
 
-    # Generate text using the trained model
-    seed_sequence = ['what', 'did', 'the']
-    for i in range(20):
-        generated_text = generate_text(model, word2index, index2word, seed_sequence, max_length=30, randomness=0.8)
-        print(generated_text)
-    seed_sequence = ['smell', 'you', 'later']
-    for i in range(20):
-        generated_text = generate_text(model, word2index, index2word, seed_sequence, max_length=30, randomness=2.4)
-        print(generated_text)
+        # Generate text using the trained model
+        saved_jokes = []
+        prompts = ["what do you"]
+        for prompt in prompts:
+            saved_jokes.append("===========PROMPT===========")
+            saved_jokes.append(prompt)
+            for i in range(20):
+                generated_text = generate_text(model, word2index, index2word, prompt.split(), max_length=40,
+                                               randomness=1.7, k=40)
+                print(generated_text)
+                saved_jokes.append(generated_text)
+
+        with open('jokes.txt', 'w') as f:
+            f.writelines([line + '\n' for line in saved_jokes])

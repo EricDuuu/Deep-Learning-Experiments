@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from sklearn import metrics
 
-
+# https://stackoverflow.com/questions/61012846/how-to-get-final-hidden-state-of-bidirectional-2-layers-gru-in-pytorch
 class LSTM(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim, layers, bidirectional, dropout_rate):
         super().__init__()
@@ -15,6 +15,7 @@ class LSTM(nn.Module):
 
     def forward(self, reviews):
         embedded = self.dropout(self.embedding(reviews))
+        # Outputs: output, (h_n, c_n)
         output, (hidden, cell) = self.lstm(embedded)
         if self.lstm.bidirectional:
             hidden = self.dropout(torch.cat([hidden[-1], hidden[-2]], dim=-1))
