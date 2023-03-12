@@ -1,12 +1,5 @@
 import pickle
 import re
-from os.path import exists
-import string
-import torchtext
-import pandas as pd
-from nltk import tokenize
-import pickle
-import re
 import string
 from os.path import exists
 
@@ -75,7 +68,7 @@ class Data_Loader():
             unk_index = vocab['<unk>']
             vocab.set_default_index(unk_index)
 
-            X_test = [self.numericalize_data(review, vocab) for review in X_train]
+            X_test = [vocab.lookup_indices(review) for review in X_train]
 
             testandtrain = {'X': X_test, 'vocab': vocab}
             with open('jokes_clean.pickle', 'wb') as handle:
