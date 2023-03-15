@@ -1,33 +1,32 @@
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from sklearn import metrics
 
 
 # Define the GCN model
+# Define the GCN model
 class GCN(nn.Module):
     def __init__(self, input_features, hidden_dim, output_features, dropout):
         super(GCN, self).__init__()
-        self.leakyRelu = nn.LeakyReLU(0.2)
+        self.leakyRelu = nn.ReLU()
         self.gc1 = GraphConvolution(input_features, hidden_dim)
+        self.bn1 = nn.BatchNorm1d(hidden_dim)
         self.gc2 = GraphConvolution(hidden_dim, output_features)
-        self.dropout = dropout
+        self.bn2 = nn.BatchNorm1d(output_features)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, adj):
-        # x = F.relu(self.gc1(x, adj))
-        x = self.leakyRelu(self.gc1(x, adj))
-        x = F.dropout(x, self.dropout, training=self.training)
-        x = self.gc2(x, adj)
-        return F.log_softmax(x, dim=1)
+        x = self.leakyRelu(self.bn1(self.gc1(x, adj)))
+        x = self.dropout(x)
+        x = self.bn2(self.gc2(x, adj))
+        return nn.LogSoftmax(dim=1)(x)
 
 class GraphConvolution(nn.Module):
     def __init__(self, in_features, out_features):
         super(GraphConvolution, self).__init__()
-        # Exploding grad
-        stdv = 1.0 / np.sqrt(in_features)
-        self.weight = nn.Parameter(torch.randn(in_features, out_features) * stdv)
-        self.bias = nn.Parameter(torch.FloatTensor(out_features))
+        self.weight = nn.Parameter(torch.zeros(in_features, out_features))
+        nn.init.xavier_uniform_(self.weight)
+        self.bias = nn.Parameter(torch.zeros(out_features))
 
     def forward(self, x, adj):
         support = torch.mm(x, self.weight)

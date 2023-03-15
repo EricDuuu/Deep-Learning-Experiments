@@ -22,17 +22,18 @@ labels = data['graph']['y']
 
 # Initialize the model, optimizer, and loss function
 epochs = 500
-dropout = 0.5 # Best : 0.5
-weight_decay = 5e-4 # Best: 5e-4
-hidden_dim = 128
+dropout = 0.9 # citeseer: 0.9
+weight_decay = 0.001 # citeseer: 0.001
+hidden_dim = 128 # citeseer: 0.128
+learning_rate = 0.24 # citeseer: 0.24
 model = GCN(input_features=input_features.shape[1], hidden_dim=hidden_dim,
             output_features=labels.max().item()+1, dropout=dropout)
-optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=weight_decay)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 criterion = nn.CrossEntropyLoss()
 
 
 # Early stopping parameters
-patience = 100
+patience = 200
 counter = 0
 best_val_acc = 0
 best_model = None
