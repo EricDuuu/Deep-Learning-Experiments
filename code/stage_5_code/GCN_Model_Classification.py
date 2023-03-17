@@ -7,18 +7,14 @@ from sklearn import metrics
 # Define the GCN model
 class GCN(nn.Module):
     def __init__(self, input_features, hidden_dim, output_features, dropout):
-        super(GCN, self).__init__()
-        self.leakyRelu = nn.ReLU()
+        nn.Module.__init__(self)
         self.gc1 = GraphConvolution(input_features, hidden_dim)
-        self.bn1 = nn.BatchNorm1d(hidden_dim)
         self.gc2 = GraphConvolution(hidden_dim, output_features)
-        self.bn2 = nn.BatchNorm1d(output_features)
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x, adj):
-        x = self.leakyRelu(self.bn1(self.gc1(x, adj)))
-        x = self.dropout(x)
-        x = self.bn2(self.gc2(x, adj))
+        self.dropout = dropout
+    def forward(self, raw_x, adj, eigen_adj=None):
+        x = nn.ReLU()(self.gc1(raw_x, adj))
+        x = nn.Dropout(self.dropout)(x)
+        x = self.gc2(x, adj)
         return nn.LogSoftmax(dim=1)(x)
 
 class GraphConvolution(nn.Module):

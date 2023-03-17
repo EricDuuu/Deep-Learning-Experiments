@@ -22,12 +22,12 @@ labels = data['graph']['y']
 
 # Initialize the model, optimizer, and loss function
 epochs = 500
-dropout = 0.9 # citeseer: 0.9
+dropout = 0.5 # citeseer: 0.9
 weight_decay = 0.001 # citeseer: 0.001
 hidden_dim = 128 # citeseer: 0.128
-learning_rate = 0.24 # citeseer: 0.24
+learning_rate = 0.01 # citeseer: 0.24
 model = GCN(input_features=input_features.shape[1], hidden_dim=hidden_dim,
-            output_features=labels.max().item()+1, dropout=dropout)
+                  output_features=labels.max().item()+1, dropout=dropout)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 criterion = nn.CrossEntropyLoss()
 
@@ -73,4 +73,4 @@ print('Test Loss {:.4f} | Test Acc {:.4f} | Test F1 {:.4f} |'
       ' Test Recall {:.4f} | Test Precision {:.4f}'.format(
             test_loss, accuracy, f1, recall, precision))
 
-plot_acc_loss("GCN", val_accs, val_loss)
+plot_acc_loss("GCN", val_accs, val_losses)

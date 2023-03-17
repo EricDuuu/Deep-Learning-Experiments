@@ -14,7 +14,7 @@ torch.manual_seed(10)
 # Load the dataset
 dataset_name = "citeseer"
 dataset_loader = Dataset_Loader(dName=dataset_name)
-dataset_loader.dataset_source_folder_path = "/kaggle/input/stage5/stage_5_data/" + dataset_name
+dataset_loader.dataset_source_folder_path = "../../data/stage_5_data/" + dataset_name
 data = dataset_loader.load()
 
 # Split the dataset into train, validation, and test sets
